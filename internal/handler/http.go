@@ -10,9 +10,7 @@ import (
 // with a given name.
 func NewAddWarehouse(warehouseRepository internal.WarehouseRepository) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		var request struct {
-			Name string `json:"name" validate:"required"`
-		}
+		var request PostWarehousesJSONRequestBody
 
 		if err := web.DecodeJSON(r, &request); err != nil {
 			return NewErrorf(http.StatusBadRequest, "invalid request body: %v", err)
@@ -28,23 +26,15 @@ func NewAddWarehouse(warehouseRepository internal.WarehouseRepository) web.Handl
 			return NewError(http.StatusInternalServerError, err.Error())
 		}
 
-		type response struct {
-			ID int `json:"id"`
-		}
-
-		return web.EncodeJSON(w, response{warehouse.ID()}, http.StatusCreated)
+		return web.EncodeJSON(w, Warehouse{warehouse.ID()}, http.StatusCreated)
 	}
 }
 
-// NewAddProductStock returns a handler that will add an existing product
+// NewAddProductToWarehouse returns a handler that will add an existing product
 // to a warehouse.
-func NewAddProductStock(warehouseRepository internal.WarehouseRepository) web.Handler {
+func NewAddProductToWarehouse(warehouseRepository internal.WarehouseRepository) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		var request struct {
-			ProductName string `json:"product_name" validate:"required"`
-			Quantity    int    `json:"quantity" validate:"required"`
-		}
-
+		var request PostWarehousesWarehouseIdProductsJSONRequestBody
 		if err := web.DecodeJSON(r, &request); err != nil {
 			return NewErrorf(http.StatusBadRequest, "invalid request body: %v", err)
 		}
@@ -63,7 +53,7 @@ func NewAddProductStock(warehouseRepository internal.WarehouseRepository) web.Ha
 			return NewErrorf(http.StatusNotFound, "warehouse %d not found", warehouseID)
 		}
 
-		if err := warehouse.AddStock(request.ProductName, request.Quantity); err != nil {
+		if err := warehouse.AddStock(request.Product.Name, request.Quantity); err != nil {
 			return NewError(http.StatusInternalServerError, err.Error())
 		}
 
@@ -71,14 +61,9 @@ func NewAddProductStock(warehouseRepository internal.WarehouseRepository) web.Ha
 			return NewError(http.StatusInternalServerError, err.Error())
 		}
 
-		type response struct {
-			ProductName string `json:"product_name"`
-			Quantity    int    `json:"quantity"`
-		}
-
-		return web.EncodeJSON(w, response{
-			ProductName: request.ProductName,
-			Quantity:    warehouse.Stock(request.ProductName),
+		return web.EncodeJSON(w, ProductQuantity{
+			Product:  Product{Name: request.Product.Name},
+			Quantity: warehouse.Stock(request.Product.Name),
 		}, http.StatusOK)
 	}
 }
@@ -87,12 +72,7 @@ func NewAddProductStock(warehouseRepository internal.WarehouseRepository) web.Ha
 // warehouse and a list of products.
 func NewCreateOrder(warehouseRepository internal.WarehouseRepository, orderService *internal.OrderService) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		var request struct {
-			Products []struct {
-				ProductName string `json:"product_name" validate:"required"`
-				Quantity    int    `json:"quantity" validate:"required"`
-			} `json:"products" validate:"required"`
-		}
+		var request PostWarehousesWarehouseIdOrdersJSONRequestBody
 
 		if err := web.DecodeJSON(r, &request); err != nil {
 			return NewErrorf(http.StatusBadRequest, "invalid request body: %v", err)
@@ -104,8 +84,8 @@ func NewCreateOrder(warehouseRepository internal.WarehouseRepository, orderServi
 		}
 
 		products := make(map[string]int)
-		for _, product := range request.Products {
-			products[product.ProductName] = product.Quantity
+		for _, product := range request.Order {
+			products[product.Product.Name] = product.Quantity
 		}
 
 		if err := orderService.CreateOrder(r.Context(), warehouseID, products); err != nil {
@@ -117,22 +97,14 @@ func NewCreateOrder(warehouseRepository internal.WarehouseRepository, orderServi
 			return NewError(http.StatusInternalServerError, err.Error())
 		}
 
-		var response struct {
-			Stock []struct {
-				ProductName string `json:"product_name"`
-				Quantity    int    `json:"quantity"`
-			} `json:"stock"`
-		}
+		var response Stock
 
 		// For every product in the order, get the current stock
 		// and add it to the response.
 		for productName := range products {
-			response.Stock = append(response.Stock, struct {
-				ProductName string `json:"product_name"`
-				Quantity    int    `json:"quantity"`
-			}{
-				ProductName: productName,
-				Quantity:    warehouse.Stock(productName),
+			response.Stock = append(response.Stock, ProductQuantity{
+				Product:  Product{Name: productName},
+				Quantity: warehouse.Stock(productName),
 			})
 		}
 

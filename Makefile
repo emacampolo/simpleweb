@@ -1,5 +1,5 @@
 .PHONY: all
-all: tidy format vet test
+all: tidy format vet openapi test
 
 .PHONY: tidy
 tidy:
@@ -34,3 +34,18 @@ test-cover: test
 run:
 	@echo "=> Running application"
 	@go run cmd/main.go
+
+.PHONY: openapi
+openapi:
+	@oapi-codegen -generate types --exclude-schemas=Error -o internal/handler/openapi_types.gen.go -package handler internal/handler/openapi/spec.yaml
+
+.PHONY: openapi-ui
+openapi-ui:
+	@echo "=> Running SwaggerUI"
+	@echo "Open http://localhost:9999 after the message 'Configuration complete; ready for start up'"
+	@echo "Press Ctrl+C to stop"
+	@echo ""
+	@docker run --rm -p 9999:8080 \
+		-v $(PWD)/internal/handler/openapi/spec.yaml:/spec.yaml \
+		-e SWAGGER_JSON=/spec.yaml \
+		swaggerapi/swagger-ui 2> /dev/null | grep "Configuration complete; ready for start up"

@@ -31,8 +31,8 @@ After running, `make run`, open a new terminal and run the following commands:
 curl -X POST -H "Content-Type: application/json" -s -d '{"name":"my warehouse"}' http://localhost:8080/warehouses
 
 # Increment the quantity of a product in a warehouse.
-curl -X POST -H "Content-Type: application/json" -s -d '{"product_name":"Book","quantity": 10}' http://localhost:8080/warehouses/1/products
+curl -X POST -H "Content-Type: application/json" -s -d '{"product":{"name":"Book"},"quantity":10}' http://localhost:8080/warehouses/1/products
 
 # Create an order.
-curl -X POST -H "Content-Type: application/json" -s -d '{"products":[{"product_name":"Book","quantity":1}]}' http://localhost:8080/warehouses/1/orders
+curl -X POST -H "Content-Type: application/json" -s -d '{"order":[{"product":{"name":"Book"},"quantity":1}]}' http://localhost:8080/warehouses/1/orders
 ```

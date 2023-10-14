@@ -1,0 +1,188 @@
+openapi: 3.0.0
+info:
+  title: Warehouse Management API
+  version: 1.0.0
+paths:
+  /warehouses:
+    post:
+      summary: Create a new warehouse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddWarehouse'
+      responses:
+        '201':
+          description: Warehouse created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Warehouse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /warehouses/{warehouse_id}/products:
+    post:
+      summary: Add a product to a warehouse
+      parameters:
+        - name: warehouse_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddProductToWarehouse'
+      responses:
+        '200':
+          description: Product added to warehouse successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductQuantity'
+        '400':
+          description: Invalid request body or warehouse ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Warehouse not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /warehouses/{warehouse_id}/orders:
+    post:
+      summary: Create a new order for a warehouse
+      parameters:
+        - name: warehouse_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrder'
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stock'
+        '400':
+          description: Invalid request body or warehouse ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    AddWarehouse:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+
+    Product:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+
+    Warehouse:
+      type: object
+      properties:
+        id:
+          type: integer
+      required:
+        - id
+
+    AddProductToWarehouse:
+      type: object
+      properties:
+        product:
+          $ref: '#/components/schemas/Product'
+        quantity:
+          type: integer
+      required:
+        - product
+        - quantity
+
+    ProductQuantity:
+      type: object
+      properties:
+        product:
+          $ref: '#/components/schemas/Product'
+        quantity:
+          type: integer
+      required:
+        - product
+        - quantity
+
+    CreateOrder:
+      type: object
+      properties:
+        order:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductQuantity'
+      required:
+        - order
+
+    Stock:
+      type: object
+      properties:
+        stock:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductQuantity'
+      required:
+        - stock
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        code:
+          type: string
+      required:
+        - message
+        - code
