@@ -60,7 +60,7 @@ func registerRoutes(warehouseRepository internal.WarehouseRepository, m *web.Mux
 	m.Handle("POST", "/warehouses",
 		handler.NewAddWarehouse(warehouseRepository))
 	m.Handle("POST", "/warehouses/{warehouse_id}/products",
-		handler.NewAddProductStock(warehouseRepository))
+		handler.NewAddProductToWarehouse(warehouseRepository))
 	m.Handle("POST", "/warehouses/{warehouse_id}/orders",
 		handler.NewCreateOrder(warehouseRepository, internal.NewOrderService(warehouseRepository)))
 }

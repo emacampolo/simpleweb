@@ -30,7 +30,7 @@ func TestNewAddWarehouse(t *testing.T) {
 	require.Equal(t, `{"id":1}`, w.Body.String())
 }
 
-func TestNewAddProductStock(t *testing.T) {
+func TestNewAddProductToWarehouse(t *testing.T) {
 	warehouseRepositoryMock := internal.NewWarehouseRepositoryMock()
 	warehouse, err := internal.NewWarehouse("Warehouse 1")
 	require.NoError(t, err)
@@ -50,16 +50,16 @@ func TestNewAddProductStock(t *testing.T) {
 		return nil, nil
 	}
 
-	req := httptest.NewRequest("", "/", strings.NewReader(`{"product_name":"Book","quantity":10}`))
+	req := httptest.NewRequest("", "/", strings.NewReader(`{"product":{"name":"Book"},"quantity":10}`))
 	req = web.WithURLParams(t, req, map[string]string{"warehouse_id": "1"})
 	w := httptest.NewRecorder()
 
-	h := handler.NewAddProductStock(warehouseRepositoryMock)
+	h := handler.NewAddProductToWarehouse(warehouseRepositoryMock)
 	err = h(w, req)
 	require.NoError(t, err)
 
 	require.Equal(t, 200, w.Code)
-	require.JSONEq(t, `{"product_name":"Book","quantity":10}`, w.Body.String())
+	require.JSONEq(t, `{"product":{"name":"Book"},"quantity":10}`, w.Body.String())
 	require.Equal(t, 10, warehouse.Stock("Book"))
 }
 
@@ -85,7 +85,7 @@ func TestNewCreateOrder(t *testing.T) {
 	orderService := internal.NewOrderService(warehouseRepositoryMock)
 
 	req := httptest.NewRequest("", "/",
-		strings.NewReader(`{"products":[{"product_name":"Book","quantity":5}]}`))
+		strings.NewReader(`{"order":[{"product":{"name":"Book"},"quantity":5}]}`))
 	req = web.WithURLParams(t, req, map[string]string{"warehouse_id": "1"})
 	w := httptest.NewRecorder()
 
@@ -94,6 +94,6 @@ func TestNewCreateOrder(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, 201, w.Code)
-	require.JSONEq(t, `{"stock":[{"product_name":"Book","quantity":5}]}`, w.Body.String())
+	require.JSONEq(t, `{"stock":[{"product":{"name":"Book"},"quantity":5}]}`, w.Body.String())
 	require.Equal(t, 5, warehouse.Stock("Book"))
 }
